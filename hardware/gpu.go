@@ -26,6 +26,8 @@ func mapPciVendorIDToName(vID string) string {
 		return "NVIDIA"
 	case "8086":
 		return "Intel"
+	case "1af4":
+		return "VMware"
 	default:
 		return "Vendor:" + vID
 	}
@@ -60,7 +62,14 @@ func getGPUDetailsFromSysfs(cardIndex int) (GPUDetails, error) {
 	return details, nil
 }
 
-func getGPUModelFromLspci(pciID string) string {
+func getGPUModelFromLspci(pciID string, vendorName string) string { // Dodajemy vendorName
+	if vendorName == "VMware" {
+		if pciID == "1af4:1050" {
+			return "VMware SVGA II Adapter"
+		}
+		return "VMware Virtual Adapter"
+	}
+
 	if outLspci, err := exec.Command("lspci").Output(); err == nil {
 		scannerLspci := bufio.NewScanner(bytes.NewReader(outLspci))
 		for scannerLspci.Scan() {
@@ -87,6 +96,7 @@ func getGPUModelFromLspci(pciID string) string {
 	return ""
 }
 
+// GetGPUInfo zwraca informacje o karcie graficznej.
 func GetGPUInfo() string {
 	if runtime.GOOS != "linux" {
 		return "N/A"
@@ -95,8 +105,11 @@ func GetGPUInfo() string {
 	for i := 0; i < 4; i++ {
 		details, err := getGPUDetailsFromSysfs(i)
 		if err == nil {
-			model := getGPUModelFromLspci(details.PCI_ID)
+			// Przekazujemy również nazwę producenta do getGPUModelFromLspci
+			model := getGPUModelFromLspci(details.PCI_ID, details.Vendor)
 			if model == "" {
+				// Jeśli nie udało się znaleźć konkretnego modelu, użyj generycznej nazwy
+				// i ewentualnie dodaj SubsystemID
 				if details.SubsystemID != "" {
 					model = fmt.Sprintf("%s (ID: %s SubID: %s)", details.Vendor, details.PCI_ID, details.SubsystemID)
 				} else {
@@ -106,29 +119,5 @@ func GetGPUInfo() string {
 			return model
 		}
 	}
-
-	if out, err := exec.Command("lspci").Output(); err == nil {
-		scanner := bufio.NewScanner(bytes.NewReader(out))
-		for scanner.Scan() {
-			line := scanner.Text()
-			if (strings.Contains(line, "VGA") || strings.Contains(line, "3D")) && !strings.Contains(line, "DRAM Controller") {
-				re := regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
-				if match := re.FindStringSubmatch(line); len(match) > 1 {
-					return strings.TrimSpace(match[1])
-				}
-				parts := strings.SplitN(line, ": ", 3)
-				if len(parts) > 2 {
-					gpu := strings.TrimSpace(parts[2])
-					gpu = strings.Replace(gpu, "Advanced Micro Devices, Inc.", "", -1)
-					gpu = strings.Replace(gpu, "NVIDIA Corporation", "", -1)
-					gpu = strings.Replace(gpu, "Intel Corporation", "", -1)
-					gpu = regexp.MustCompile(`\[.*?\]`).ReplaceAllString(gpu, "")
-					gpu = regexp.MustCompile(`\(rev [0-9a-fA-F]+\)`).ReplaceAllString(gpu, "")
-					return strings.TrimSpace(gpu)
-				}
-			}
-		}
-	}
-
 	return "Unknown GPU"
 }

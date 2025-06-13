@@ -44,7 +44,7 @@ func GetMemoryAndSwapInfo() (string, string) {
 					float64(totalSwap)/1024/1024,
 					float64(usedSwap)/float64(totalSwap)*100)
 			} else {
-				swapInfo = "Brak swapu"
+				swapInfo = "-"
 			}
 			return memInfo, swapInfo
 		}

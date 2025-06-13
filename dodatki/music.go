@@ -18,5 +18,5 @@ func GetCurrentMusic() string {
 		}
 	}
 
-	return "Not playing"
+	return "-"
 }

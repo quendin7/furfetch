@@ -169,6 +169,13 @@ func main() {
 			}{"Spotify", musicInfo})
 		}
 	}
+	maxLabelLen := 0
+	for _, pair := range infoPairs {
+		if len(pair.Label) > maxLabelLen {
+			maxLabelLen = len(pair.Label)
+		}
+	}
+
 	var infoLines []string
 	for i, pair := range infoPairs {
 		var valueColor string
@@ -177,7 +184,9 @@ func main() {
 		} else {
 			valueColor = ColorBlue
 		}
-		infoLines = append(infoLines, fmt.Sprintf("%s: %s%s%s", pair.Label, valueColor, pair.Value, ColorReset))
+		// Dodaj spacje, aby wyrównać etykiety
+		alignedLabel := fmt.Sprintf("%-*s", maxLabelLen, pair.Label)
+		infoLines = append(infoLines, fmt.Sprintf("%s- %s%s%s", alignedLabel, valueColor, pair.Value, ColorReset))
 	}
 
 	var logo []string

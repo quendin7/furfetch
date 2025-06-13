@@ -11,80 +11,102 @@ import (
 	"strings"
 )
 
+type GPUDetails struct {
+	Vendor      string
+	Model       string
+	PCI_ID      string
+	SubsystemID string
+}
+
+func mapPciVendorIDToName(vID string) string {
+	switch vID {
+	case "1002":
+		return "AMD"
+	case "10de":
+		return "NVIDIA"
+	case "8086":
+		return "Intel"
+	default:
+		return "Vendor:" + vID
+	}
+}
+
+func getGPUDetailsFromSysfs(cardIndex int) (GPUDetails, error) {
+	details := GPUDetails{}
+	vendorPath := fmt.Sprintf("/sys/class/drm/card%d/device/vendor", cardIndex)
+	devicePath := fmt.Sprintf("/sys/class/drm/card%d/device/device", cardIndex)
+	subsystemVendorPath := fmt.Sprintf("/sys/class/drm/card%d/device/subsystem_vendor", cardIndex)
+	subsystemDevicePath := fmt.Sprintf("/sys/class/drm/card%d/device/subsystem_device", cardIndex)
+
+	vIDBytes, errV := ioutil.ReadFile(vendorPath)
+	dIDBytes, errD := ioutil.ReadFile(devicePath)
+	if errV != nil || errD != nil {
+		return details, fmt.Errorf("nie można odczytać ID producenta/urządzenia z sysfs dla karty %d", cardIndex)
+	}
+
+	vID := strings.TrimSpace(strings.TrimPrefix(string(vIDBytes), "0x"))
+	dID := strings.TrimSpace(strings.TrimPrefix(string(dIDBytes), "0x"))
+
+	details.Vendor = mapPciVendorIDToName(vID)
+	details.PCI_ID = fmt.Sprintf("%s:%s", vID, dID)
+
+	if subVBytes, err := ioutil.ReadFile(subsystemVendorPath); err == nil {
+		subV := strings.TrimSpace(strings.TrimPrefix(string(subVBytes), "0x"))
+		if subDBytes, err := ioutil.ReadFile(subsystemDevicePath); err == nil {
+			subD := strings.TrimSpace(strings.TrimPrefix(string(subDBytes), "0x"))
+			details.SubsystemID = fmt.Sprintf("%s:%s", subV, subD)
+		}
+	}
+	return details, nil
+}
+
+func getGPUModelFromLspci(pciID string) string {
+	if outLspci, err := exec.Command("lspci").Output(); err == nil {
+		scannerLspci := bufio.NewScanner(bytes.NewReader(outLspci))
+		for scannerLspci.Scan() {
+			line := scannerLspci.Text()
+			if strings.Contains(line, pciID) || (strings.Contains(line, "VGA") || strings.Contains(line, "3D")) {
+				re := regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
+				if match := re.FindStringSubmatch(line); len(match) > 1 {
+					return strings.TrimSpace(match[1])
+				}
+
+				parts := strings.SplitN(line, ": ", 3)
+				if len(parts) > 2 {
+					gpu := strings.TrimSpace(parts[2])
+					gpu = strings.Replace(gpu, "Advanced Micro Devices, Inc.", "", -1)
+					gpu = strings.Replace(gpu, "NVIDIA Corporation", "", -1)
+					gpu = strings.Replace(gpu, "Intel Corporation", "", -1)
+					gpu = regexp.MustCompile(`\[.*?\]`).ReplaceAllString(gpu, "")
+					gpu = regexp.MustCompile(`\(rev [0-9a-fA-F]+\)`).ReplaceAllString(gpu, "")
+					return strings.TrimSpace(gpu)
+				}
+			}
+		}
+	}
+	return ""
+}
+
 func GetGPUInfo() string {
 	if runtime.GOOS != "linux" {
 		return "N/A"
 	}
+
 	for i := 0; i < 4; i++ {
-		vendorPath := fmt.Sprintf("/sys/class/drm/card%d/device/vendor", i)
-		devicePath := fmt.Sprintf("/sys/class/drm/card%d/device/device", i)
-		subsystemVendorPath := fmt.Sprintf("/sys/class/drm/card%d/device/subsystem_vendor", i)
-		subsystemDevicePath := fmt.Sprintf("/sys/class/drm/card%d/device/subsystem_device", i)
-
-		vendorIDBytes, errVendor := ioutil.ReadFile(vendorPath)
-		deviceIDBytes, errDevice := ioutil.ReadFile(devicePath)
-
-		if errVendor == nil && errDevice == nil {
-			vID := strings.TrimSpace(strings.TrimPrefix(string(vendorIDBytes), "0x"))
-			dID := strings.TrimSpace(strings.TrimPrefix(string(deviceIDBytes), "0x"))
-
-			subVendorID := ""
-			subDeviceID := ""
-			if subVendorBytes, err := ioutil.ReadFile(subsystemVendorPath); err == nil {
-				subVendorID = strings.TrimSpace(strings.TrimPrefix(string(subVendorBytes), "0x"))
-			}
-			if subDeviceBytes, err := ioutil.ReadFile(subsystemDevicePath); err == nil {
-				subDeviceID = strings.TrimSpace(strings.TrimPrefix(string(subDeviceBytes), "0x"))
-			}
-
-			vendorName := ""
-			switch vID {
-			case "1002":
-				vendorName = "AMD"
-			case "10de":
-				vendorName = "NVIDIA"
-			case "8086":
-				vendorName = "Intel"
-			default:
-				vendorName = "Vendor:" + vID
-			}
-
-			gpuIdent := fmt.Sprintf("%s (ID: %s:%s", vendorName, vID, dID)
-			if subVendorID != "" && subDeviceID != "" {
-				gpuIdent += fmt.Sprintf(" SubID: %s:%s)", subVendorID, subDeviceID)
-			} else {
-				gpuIdent += ")"
-			}
-
-			if outLspci, errLspci := exec.Command("lspci").Output(); errLspci == nil {
-				scannerLspci := bufio.NewScanner(bytes.NewReader(outLspci))
-				for scannerLspci.Scan() {
-					line := scannerLspci.Text()
-					if strings.Contains(line, vID+":"+dID) || (strings.Contains(line, "VGA") || strings.Contains(line, "3D")) {
-						re := regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
-						if match := re.FindStringSubmatch(line); len(match) > 1 {
-							return strings.TrimSpace(match[1])
-						}
-
-						parts := strings.SplitN(line, ": ", 3)
-						if len(parts) > 2 {
-							gpu := strings.TrimSpace(parts[2])
-							gpu = strings.Replace(gpu, "Advanced Micro Devices, Inc.", "", -1)
-							gpu = strings.Replace(gpu, "NVIDIA Corporation", "", -1)
-							gpu = strings.Replace(gpu, "Intel Corporation", "", -1)
-							gpu = regexp.MustCompile(`\[.*?\]`).ReplaceAllString(gpu, "")
-							gpu = regexp.MustCompile(`\(rev [0-9a-fA-F]+\)`).ReplaceAllString(gpu, "")
-							gpu = strings.TrimSpace(gpu)
-							if gpu != "" {
-								return gpu
-							}
-						}
-					}
+		details, err := getGPUDetailsFromSysfs(i)
+		if err == nil {
+			model := getGPUModelFromLspci(details.PCI_ID)
+			if model == "" {
+				if details.SubsystemID != "" {
+					model = fmt.Sprintf("%s (ID: %s SubID: %s)", details.Vendor, details.PCI_ID, details.SubsystemID)
+				} else {
+					model = fmt.Sprintf("%s (ID: %s)", details.Vendor, details.PCI_ID)
 				}
 			}
-			return gpuIdent
+			return model
 		}
 	}
+
 	if out, err := exec.Command("lspci").Output(); err == nil {
 		scanner := bufio.NewScanner(bytes.NewReader(out))
 		for scanner.Scan() {
@@ -107,5 +129,6 @@ func GetGPUInfo() string {
 			}
 		}
 	}
+
 	return "Unknown GPU"
 }

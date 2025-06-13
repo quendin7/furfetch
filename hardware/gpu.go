@@ -95,8 +95,6 @@ func getGPUModelFromLspci(pciID string, vendorName string) string { // Dodajemy 
 	}
 	return ""
 }
-
-// GetGPUInfo zwraca informacje o karcie graficznej.
 func GetGPUInfo() string {
 	if runtime.GOOS != "linux" {
 		return "N/A"
@@ -105,11 +103,8 @@ func GetGPUInfo() string {
 	for i := 0; i < 4; i++ {
 		details, err := getGPUDetailsFromSysfs(i)
 		if err == nil {
-			// Przekazujemy również nazwę producenta do getGPUModelFromLspci
 			model := getGPUModelFromLspci(details.PCI_ID, details.Vendor)
 			if model == "" {
-				// Jeśli nie udało się znaleźć konkretnego modelu, użyj generycznej nazwy
-				// i ewentualnie dodaj SubsystemID
 				if details.SubsystemID != "" {
 					model = fmt.Sprintf("%s (ID: %s SubID: %s)", details.Vendor, details.PCI_ID, details.SubsystemID)
 				} else {

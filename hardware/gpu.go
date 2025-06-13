@@ -62,7 +62,7 @@ func getGPUDetailsFromSysfs(cardIndex int) (GPUDetails, error) {
 	return details, nil
 }
 
-func getGPUModelFromLspci(pciID string, vendorName string) string { // Dodajemy vendorName
+func getGPUModelFromLspci(pciID string, vendorName string) string {
 	if vendorName == "VMware" {
 		if pciID == "1af4:1050" {
 			return "VMware SVGA II Adapter"

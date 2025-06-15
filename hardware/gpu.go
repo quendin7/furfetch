@@ -11,6 +11,15 @@ import (
 	"strings"
 )
 
+var (
+	reDeviceNameVulkan = regexp.MustCompile(`deviceName\s*=\s*(.+?)(?:\s+\(.+\))?\n`)
+	//	reVendorIDVulkan     = regexp.MustCompile(`vendorID\s*=\s*(0x[0-9a-fA-F]+)\n`)
+	//	reDriverNameVulkan   = regexp.MustCompile(`driverName\s*=\s*(.+)\n`)
+	//	reDriverVersionVulkan = regexp.MustCompile(`driverVersion\s*=\s*(.+)\n`)
+	reIntelLspci = regexp.MustCompile(`Intel Corporation\s+[^\]]*?\[((?:UHD|HD|Iris [PX]e|Iris Plus|Xe) Graphics[^\]]*?)\]`)
+	reNaviLspci  = regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
+)
+
 type GPUDetails struct {
 	Vendor      string
 	Model       string
@@ -31,6 +40,25 @@ func mapPciVendorIDToName(vID string) string {
 	default:
 		return "Vendor:" + vID
 	}
+}
+
+// getGPUInfoFromVulkaninfo próbuje pobrać informacje o GPU z `vulkaninfo`.
+func getGPUInfoFromVulkaninfo() (string, error) {
+	out, err := exec.Command("vulkaninfo").Output()
+	if err != nil {
+		return "", fmt.Errorf("nie można uruchomić vulkaninfo: %w", err)
+	}
+
+	outputStr := string(out)
+	deviceName := ""
+	if match := reDeviceNameVulkan.FindStringSubmatch(outputStr); len(match) > 1 {
+		deviceName = strings.TrimSpace(match[1])
+	}
+	if deviceName != "" {
+		return deviceName, nil
+	}
+
+	return "", fmt.Errorf("nie znaleziono nazwy urządzenia w wyjściu vulkaninfo")
 }
 
 func getGPUDetailsFromSysfs(cardIndex int) (GPUDetails, error) {
@@ -75,8 +103,14 @@ func getGPUModelFromLspci(pciID string, vendorName string) string {
 		for scannerLspci.Scan() {
 			line := scannerLspci.Text()
 			if strings.Contains(line, pciID) || (strings.Contains(line, "VGA") || strings.Contains(line, "3D")) {
-				re := regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
-				if match := re.FindStringSubmatch(line); len(match) > 1 {
+
+				if vendorName == "Intel" {
+					if match := reIntelLspci.FindStringSubmatch(line); len(match) > 1 {
+						return strings.TrimSpace(match[1])
+					}
+				}
+
+				if match := reNaviLspci.FindStringSubmatch(line); len(match) > 1 {
 					return strings.TrimSpace(match[1])
 				}
 
@@ -95,9 +129,14 @@ func getGPUModelFromLspci(pciID string, vendorName string) string {
 	}
 	return ""
 }
+
 func GetGPUInfo() string {
 	if runtime.GOOS != "linux" {
 		return "N/A"
+	}
+
+	if gpuInfo, err := getGPUInfoFromVulkaninfo(); err == nil && gpuInfo != "" {
+		return gpuInfo
 	}
 
 	for i := 0; i < 4; i++ {
@@ -114,5 +153,32 @@ func GetGPUInfo() string {
 			return model
 		}
 	}
+
+	if out, err := exec.Command("lspci").Output(); err == nil {
+		scanner := bufio.NewScanner(bytes.NewReader(out))
+		for scanner.Scan() {
+			line := scanner.Text()
+			if (strings.Contains(line, "VGA") || strings.Contains(line, "3D")) && !strings.Contains(line, "DRAM Controller") {
+				if match := reIntelLspci.FindStringSubmatch(line); len(match) > 1 {
+					return strings.TrimSpace(match[1])
+				}
+				if match := reNaviLspci.FindStringSubmatch(line); len(match) > 1 {
+					return strings.TrimSpace(match[1])
+				}
+
+				parts := strings.SplitN(line, ": ", 3)
+				if len(parts) > 2 {
+					gpu := strings.TrimSpace(parts[2])
+					gpu = strings.Replace(gpu, "Advanced Micro Devices, Inc.", "", -1)
+					gpu = strings.Replace(gpu, "NVIDIA Corporation", "", -1)
+					gpu = strings.Replace(gpu, "Intel Corporation", "", -1)
+					gpu = regexp.MustCompile(`\[.*?\]`).ReplaceAllString(gpu, "")
+					gpu = regexp.MustCompile(`\(rev [0-9a-fA-F]+\)`).ReplaceAllString(gpu, "")
+					return strings.TrimSpace(gpu)
+				}
+			}
+		}
+	}
+
 	return "Unknown GPU"
 }

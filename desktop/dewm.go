@@ -9,7 +9,7 @@ import (
 
 func GetDEWM() (string, string) {
 	if os.Getenv("HYPRLAND_INSTANCE_SIGNATURE") != "" {
-		return "Brak", "Hyprland"
+		return "", "Hyprland"
 	}
 
 	de := os.Getenv("XDG_CURRENT_DESKTOP")

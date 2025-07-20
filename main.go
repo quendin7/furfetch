@@ -31,26 +31,26 @@ func main() {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"Użytkownik", username + "@" + hostname})
+		}{"Użytkownik ", username + "@" + hostname})
 	}
 
 	if cfg.EnableOSInfo {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"OS", osinfo.GetOSInfo()})
+		}{"OS ", osinfo.GetOSInfo()})
 	}
 	if cfg.EnableKernel {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"Kernel", osinfo.GetKernel()})
+		}{"Kernel ", osinfo.GetKernel()})
 	}
 	if cfg.EnablePackages {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"Pakiety", osinfo.GetPackageCount()})
+		}{"Pakiety ", osinfo.GetPackageCount()})
 	}
 
 	if cfg.EnableDEWM {
@@ -59,13 +59,13 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"DE", de})
+			}{"DE ", de})
 		}
 		if wm != "" {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"WM", wm})
+			}{"WM ", wm})
 		}
 	}
 
@@ -75,7 +75,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Motyw GTK", gtkTheme})
+			}{"Motyw GTK ", gtkTheme})
 		}
 	}
 	if cfg.EnableIconTheme {
@@ -84,7 +84,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Ikony", iconTheme})
+			}{"Ikony ", iconTheme})
 		}
 	}
 	if cfg.EnableFont {
@@ -93,7 +93,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Font", font})
+			}{"Font ", font})
 		}
 	}
 	if cfg.EnableShell {
@@ -102,7 +102,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Shell", shell})
+			}{"Shell ", shell})
 		}
 	}
 	if cfg.EnableUptime {
@@ -111,7 +111,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Uptime", uptime})
+			}{"Uptime ", uptime})
 		}
 	}
 	if cfg.EnableBattery {
@@ -120,7 +120,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Bateria", batteryInfo})
+			}{"Bateria ", batteryInfo})
 		}
 	}
 
@@ -128,7 +128,7 @@ func main() {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"CPU", hardware.GetCPUInfo()})
+		}{"CPU ", hardware.GetCPUInfo()})
 	}
 	if cfg.EnableGPU {
 		gpuInfo := hardware.GetGPUInfo()
@@ -136,7 +136,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"GPU", gpuInfo})
+			}{"GPU ", gpuInfo})
 		}
 	}
 
@@ -147,7 +147,7 @@ func main() {
 				infoPairs = append(infoPairs, struct {
 					Label string
 					Value string
-				}{"RAM", ramInfo})
+				}{"RAM ", ramInfo})
 			}
 		}
 		if cfg.EnableSwap {
@@ -155,7 +155,7 @@ func main() {
 				infoPairs = append(infoPairs, struct {
 					Label string
 					Value string
-				}{"Swap", swapInfo})
+				}{"Swap ", swapInfo})
 			}
 		}
 	}
@@ -166,7 +166,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Spotify", musicInfo})
+			}{"Spotify ", musicInfo})
 		}
 	}
 	maxLabelLen := 0

@@ -11,11 +11,11 @@ import (
 	"strings"
 )
 
-// KOLORY
+// KOLORY - zmienione na kolory ANSI, które są częścią standardowej palety terminala
 const (
-	ColorViolet = "\033[35m"
-	ColorBlue   = "\033[34m"
-	ColorReset  = "\033[0m"
+	ColorLabel = "\033[96m" // Jasny Cyan
+	ColorValue = "\033[96m" // Jasny Żółty
+	ColorReset = "\033[0m"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"Użytkownik ", username + "@" + hostname})
+		}{"User ", username + "@" + hostname})
 	}
 
 	if cfg.EnableOSInfo {
@@ -50,7 +50,7 @@ func main() {
 		infoPairs = append(infoPairs, struct {
 			Label string
 			Value string
-		}{"Pakiety ", osinfo.GetPackageCount()})
+		}{"Packages ", osinfo.GetPackageCount()})
 	}
 
 	if cfg.EnableDEWM {
@@ -75,7 +75,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Motyw GTK ", gtkTheme})
+			}{"GTK ", gtkTheme})
 		}
 	}
 	if cfg.EnableIconTheme {
@@ -84,7 +84,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Ikony ", iconTheme})
+			}{"Icons ", iconTheme})
 		}
 	}
 	if cfg.EnableFont {
@@ -120,7 +120,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Bateria ", batteryInfo})
+			}{"Baterry ", batteryInfo})
 		}
 	}
 
@@ -151,7 +151,7 @@ func main() {
 			}
 		}
 		if cfg.EnableSwap {
-			if swapInfo != "unknown" && swapInfo != "Brak swapu" {
+			if swapInfo != "unknown" && swapInfo != "No Swap" {
 				infoPairs = append(infoPairs, struct {
 					Label string
 					Value string
@@ -177,16 +177,11 @@ func main() {
 	}
 
 	var infoLines []string
-	for i, pair := range infoPairs {
-		var valueColor string
-		if i%2 == 0 {
-			valueColor = ColorBlue
-		} else {
-			valueColor = ColorBlue
-		}
-		// Dodaj spacje, aby wyrównać etykiety
+	for _, pair := range infoPairs {
+		// Zawsze używamy tych samych kolorów, które są kontrastowe
+		// w większości motywów
 		alignedLabel := fmt.Sprintf("%-*s", maxLabelLen, pair.Label)
-		infoLines = append(infoLines, fmt.Sprintf("%s- %s%s%s", alignedLabel, valueColor, pair.Value, ColorReset))
+		infoLines = append(infoLines, fmt.Sprintf("%s- %s%s%s", alignedLabel, ColorValue, pair.Value, ColorReset))
 	}
 
 	var logo []string
@@ -272,7 +267,7 @@ func main() {
 
 		spacing := 4
 		if cfg.EnableLogo {
-			fmt.Printf("%s%s%s%s%s\n", ColorBlue, logoLine, ColorReset, strings.Repeat(" ", maxLogoWidth-calculatedWidth+spacing), infoLine)
+			fmt.Printf("%s%s%s%s%s%s\n", ColorLabel, logoLine, ColorReset, strings.Repeat(" ", maxLogoWidth-calculatedWidth+spacing), infoLine, ColorReset)
 		} else {
 			fmt.Printf("%s%s\n", strings.Repeat(" ", maxLogoWidth+spacing), infoLine)
 		}

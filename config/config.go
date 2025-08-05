@@ -51,11 +51,11 @@ func GetDefaultConfig() Config {
 		EnableSwap:      true,
 		EnableMusic:     true,
 		EnableUptime:    true,
-		EnableGTKTheme:  true,
-		EnableIconTheme: true,
-		EnableFont:      true,
-		EnableShell:     true,
-		EnableBattery:   true,
+		EnableGTKTheme:  false,
+		EnableIconTheme: false,
+		EnableFont:      false,
+		EnableShell:     false,
+		EnableBattery:   false,
 		EnableLogo:      true,
 		LogoPath:        "art.txt",
 	}
@@ -63,7 +63,7 @@ func GetDefaultConfig() Config {
 
 func GetUserConfigDir() string {
 	configPathOnce.Do(func() {
-		if path := os.Getenv("FURFETCH_CONFIG_DIR"); path != "" { // Nowa zmienna ENV dla katalogu
+		if path := os.Getenv("FURFETCH_CONFIG_DIR"); path != "" {
 			configDirPath = path
 			return
 		}

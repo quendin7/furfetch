@@ -13,11 +13,8 @@ import (
 
 var (
 	reDeviceNameVulkan = regexp.MustCompile(`deviceName\s*=\s*(.+?)(?:\s+\(.+\))?\n`)
-	//	reVendorIDVulkan     = regexp.MustCompile(`vendorID\s*=\s*(0x[0-9a-fA-F]+)\n`)
-	//	reDriverNameVulkan   = regexp.MustCompile(`driverName\s*=\s*(.+)\n`)
-	//	reDriverVersionVulkan = regexp.MustCompile(`driverVersion\s*=\s*(.+)\n`)
-	reIntelLspci = regexp.MustCompile(`Intel Corporation\s+[^\]]*?\[((?:UHD|HD|Iris [PX]e|Iris Plus|Xe) Graphics[^\]]*?)\]`)
-	reNaviLspci  = regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
+	reIntelLspci       = regexp.MustCompile(`Intel Corporation\s+[^\]]*?\[((?:UHD|HD|Iris [PX]e|Iris Plus|Xe) Graphics[^\]]*?)\]`)
+	reNaviLspci        = regexp.MustCompile(`Navi \d+ \[((?:Radeon RX|GeForce RTX|Iris Xe Graphics|UHD Graphics)[^\]]*?)\]`)
 )
 
 type GPUDetails struct {
@@ -42,7 +39,6 @@ func mapPciVendorIDToName(vID string) string {
 	}
 }
 
-// getGPUInfoFromVulkaninfo próbuje pobrać informacje o GPU z `vulkaninfo`.
 func getGPUInfoFromVulkaninfo() (string, error) {
 	out, err := exec.Command("vulkaninfo").Output()
 	if err != nil {

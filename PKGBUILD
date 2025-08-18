@@ -1,12 +1,11 @@
 pkgname=asfetch
-pkgver=2
+pkgver=2.0
 pkgrel=1
 pkgdesc="A fast system information fetching tool written in Go, similar to Neofetch."
 arch=('x86_64')
 url="https://github.com/quendin7/asf"
 license=('MIT')
-depends=('git')
-makedepends=('go')
+makedepends=('go' 'git')
 optdepends=(
   'playerctl: for Spotify/music info'
   'lsb-release: for detailed OS info'
@@ -14,16 +13,16 @@ optdepends=(
   'upower: for battery info'
   'vulkan-tools: for detailed GPU info'
 )
-source=("git+${url}.git#tag=v${pkgver}?subdir=${pkgname}")
+source=("git+${url}.git#tag=${pkgver}?subdir=${pkgname}")
 sha256sums=('SKIP')
 
 build() {
-    cd "${srcdir}/${pkgname}"
+    cd "${srcdir}/asf"
     go mod tidy
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o asf
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o asfetch
 }
 
 package() {
-    cd "${srcdir}/${pkgname}"
-    install -D -m755 asf "${pkgdir}/usr/bin/asfetch"
+    cd "${srcdir}/asf"
+    install -D -m755 asfetch "${pkgdir}/usr/bin/asfetch"
 }

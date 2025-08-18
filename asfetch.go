@@ -1,21 +1,25 @@
 package main
 
 import (
+	"asf/config"
+	"asf/desktop"
+	"asf/dodatki"
+	"asf/hardware"
+	"asf/osinfo"
 	"fmt"
-	"furfetch-go/config"
-	"furfetch-go/desktop"
-	"furfetch-go/dodatki"
-	"furfetch-go/hardware"
-	"furfetch-go/osinfo"
 	"os"
 	"strings"
 )
 
 // KOLORY - zmienione na kolory ANSI, które są częścią standardowej palety terminala
 const (
-	ColorLabel = "\033[96m" // Jasny Cyan
-	ColorValue = "\033[96m" // Jasny Żółty
-	ColorReset = "\033[0m"
+	ColorLabelLight = "\033[94m" // Jasny Cyan
+	ColorLabelDark  = "\033[36m" // Ciemny Cyan
+	ColorSepLight   = "\033[90m" // Jasny niebieski
+	ColorSepDark    = "\033[97m" // Ciemny niebieski
+	ColorValueLight = "\033[96m" // Jasny biały
+	ColorValueDark  = "\033[34m" // Ciemny szary
+	ColorReset      = "\033[0m"
 )
 
 func main() {
@@ -120,7 +124,7 @@ func main() {
 			infoPairs = append(infoPairs, struct {
 				Label string
 				Value string
-			}{"Baterry ", batteryInfo})
+			}{"Battery ", batteryInfo})
 		}
 	}
 
@@ -177,11 +181,21 @@ func main() {
 	}
 
 	var infoLines []string
-	for _, pair := range infoPairs {
-		// Zawsze używamy tych samych kolorów, które są kontrastowe
-		// w większości motywów
-		alignedLabel := fmt.Sprintf("%-*s", maxLabelLen, pair.Label)
-		infoLines = append(infoLines, fmt.Sprintf("%s- %s%s%s", alignedLabel, ColorValue, pair.Value, ColorReset))
+	for i, pair := range infoPairs {
+		var labelColor, sepColor, valueColor string
+		if i%2 == 0 {
+			labelColor = ColorLabelLight
+			sepColor = ColorSepDark
+			valueColor = ColorValueLight
+		} else {
+			labelColor = ColorLabelDark
+			sepColor = ColorSepLight
+			valueColor = ColorValueDark
+		}
+		alignedLabel := fmt.Sprintf("%s%-*s%s", labelColor, maxLabelLen, pair.Label, ColorReset)
+		separator := fmt.Sprintf("%s│%s", sepColor, ColorReset)
+		value := fmt.Sprintf("%s%s%s", valueColor, pair.Value, ColorReset)
+		infoLines = append(infoLines, fmt.Sprintf("%s%s %s", alignedLabel, separator, value))
 	}
 
 	var logo []string
@@ -267,7 +281,7 @@ func main() {
 
 		spacing := 4
 		if cfg.EnableLogo {
-			fmt.Printf("%s%s%s%s%s%s\n", ColorLabel, logoLine, ColorReset, strings.Repeat(" ", maxLogoWidth-calculatedWidth+spacing), infoLine, ColorReset)
+			fmt.Printf("%s%s%s%s%s%s\n", ColorValueLight, logoLine, ColorReset, strings.Repeat(" ", maxLogoWidth-calculatedWidth+spacing), infoLine, ColorReset)
 		} else {
 			fmt.Printf("%s%s\n", strings.Repeat(" ", maxLogoWidth+spacing), infoLine)
 		}

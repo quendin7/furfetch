@@ -1,9 +1,9 @@
-pkgname=furfetch
-pkgver=1.1.0
+pkgname=asfetch
+pkgver=2
 pkgrel=1
 pkgdesc="A fast system information fetching tool written in Go, similar to Neofetch."
 arch=('x86_64')
-url="https://github.com/quendin7/furfetch"
+url="https://github.com/quendin7/asf"
 license=('MIT')
 depends=('git')
 makedepends=('go')
@@ -20,10 +20,10 @@ sha256sums=('SKIP')
 build() {
     cd "${srcdir}/${pkgname}"
     go mod tidy
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o furfetch
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o asf
 }
 
 package() {
     cd "${srcdir}/${pkgname}"
-    install -D -m755 furfetch "${pkgdir}/usr/bin/furfetch"
+    install -D -m755 asf "${pkgdir}/usr/bin/asfetch"
 }
